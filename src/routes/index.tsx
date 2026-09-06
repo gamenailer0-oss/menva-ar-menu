@@ -107,7 +107,7 @@ function Landing() {
             <div className="rounded-[28px] border border-border bg-card p-5 shadow-[var(--shadow-warm-float)]">
               <ScanFrame>
                 <img
-                  src={DISHES[2].image}
+                  src={DISHES[2]!.image}
                   alt="Tagliatelle al ragù shown in augmented reality on the table"
                   width={800}
                   height={800}
@@ -119,10 +119,10 @@ function Landing() {
                   <Pill tone="honey">
                     <ChefHat className="h-3 w-3" /> Chef's special
                   </Pill>
-                  <h2 className="dish-name mt-2 text-2xl">{DISHES[2].name}</h2>
+                  <h2 className="dish-name mt-2 text-2xl">{DISHES[2]!.name}</h2>
                   <p className="mt-1 text-sm text-charcoal-300">Table 12 · Osteria Lume</p>
                 </div>
-                <p className="price-num text-xl">${DISHES[2].price}</p>
+                <p className="price-num text-xl">${DISHES[2]!.price}</p>
               </div>
             </div>
             <Cheffy size={104} className="absolute -bottom-8 -left-6 hidden md:block" />
