@@ -5,6 +5,7 @@ const NAV = [
   { to: "/menu", label: "Live menu" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/pricing", label: "Pricing" },
+  { to: "/onboarding", label: "Get set up" },
 ] as const;
 
 export function SiteHeader() {
