@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "./brand";
 
 const NAV = [
+  { to: "/scan", label: "Scan a table" },
   { to: "/menu", label: "Live menu" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/pricing", label: "Pricing" },
@@ -10,7 +11,7 @@ const NAV = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-cream-100/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 bg-cream-100/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
         <Logo />
         <nav className="hidden items-center gap-8 md:flex">
@@ -27,7 +28,7 @@ export function SiteHeader() {
         </nav>
         <Link
           to="/menu"
-          className="rounded-md bg-saffron-500 px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-warm)] transition-transform active:scale-[0.97]"
+          className="rounded-full bg-saffron-500 px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-warm)] transition-transform active:scale-[0.97]"
         >
           Try a table
         </Link>
@@ -38,7 +39,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-cream-50">
+    <footer className="bg-cream-50">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12 md:flex-row md:items-center md:justify-between">
         <div>
           <Logo />

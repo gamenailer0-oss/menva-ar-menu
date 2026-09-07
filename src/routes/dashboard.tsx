@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { TableQR } from "@/components/menva/qr-code";
 import {
   Area,
   AreaChart,
@@ -237,8 +238,11 @@ function Dashboard() {
           >
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {Array.from({ length: 18 }, (_, i) => i + 1).map((t) => (
-                <div key={t} className="card-warm flex flex-col items-center gap-3 p-6">
-                  <QrCode className="h-10 w-10 text-charcoal-700" />
+                <div
+                  key={t}
+                  className="flex flex-col items-center gap-3 rounded-xl bg-card p-5 shadow-[var(--shadow-warm)]"
+                >
+                  <TableQR table={String(t)} size={120} />
                   <p className="label-xs text-charcoal-300">Table {t}</p>
                 </div>
               ))}
