@@ -104,7 +104,7 @@ function Landing() {
             transition={{ duration: 0.45, ease: "easeOut", delay: 0.1 }}
             className="relative"
           >
-            <div className="rounded-[28px] border border-border bg-card p-5 shadow-[var(--shadow-warm-float)]">
+            <div className="rounded-[28px] bg-cream-50 p-5 shadow-[var(--shadow-warm-float)]">
               <ScanFrame>
                 <img
                   src={DISHES[2]!.image}
@@ -143,12 +143,14 @@ function Landing() {
                   {...fadeUp}
                   transition={{ duration: 0.35, ease: "easeOut", delay: i * 0.08 }}
                   whileHover={{ scale: 1.02, y: -4 }}
-                  className="card-warm p-6 transition-shadow hover:shadow-[var(--shadow-warm-lg)]"
+                  className="pr-4"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-md bg-saffron-50 text-saffron-700">
-                    <s.icon className="h-5 w-5" />
+                  <span className="flex h-11 w-11 items-center justify-center text-saffron-700">
+                    <s.icon className="h-6 w-6" />
                   </span>
-                  <h3 className="mt-5 font-display text-xl font-medium">{s.title}</h3>
+                  <h3 className="mt-5 font-display text-2xl">
+                    <em className="italic">{s.title}</em>
+                  </h3>
                   <p className="mt-2 text-sm leading-[1.6] text-charcoal-700/75">{s.body}</p>
                 </motion.div>
               ))}
@@ -174,9 +176,9 @@ function Landing() {
                 {...fadeUp}
                 transition={{ duration: 0.35, ease: "easeOut", delay: i * 0.06 }}
                 whileHover={{ scale: 1.02, y: -4 }}
-                className="card-warm overflow-hidden"
+                className="overflow-hidden"
               >
-                <div className="overflow-hidden">
+                <div className="overflow-hidden rounded-2xl">
                   <motion.img
                     src={d.image}
                     alt={d.name}
@@ -188,8 +190,8 @@ function Landing() {
                     className="aspect-square w-full object-cover"
                   />
                 </div>
-                <div className="p-5">
-                  <h3 className="dish-name text-lg">{d.name}</h3>
+                <div className="pt-4">
+                  <h3 className="dish-name text-xl">{d.name}</h3>
                   <p className="price-num mt-1 text-base text-charcoal-300">${d.price}</p>
                 </div>
               </motion.article>
@@ -223,7 +225,7 @@ function Landing() {
                 { k: "12s", v: "Avg. menu decision" },
                 { k: "0", v: "Apps to install" },
               ].map((s) => (
-                <div key={s.v} className="rounded-lg border border-cream-100/10 bg-cream-100/5 p-6">
+                <div key={s.v} className="border-l border-cream-100/15 pl-5">
                   <p className="price-num font-display text-3xl text-honey-500">{s.k}</p>
                   <p className="label-xs mt-2 text-cream-200/70">{s.v}</p>
                 </div>
