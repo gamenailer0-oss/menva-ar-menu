@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Check, ChefHat, QrCode, Store, UtensilsCrossed } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/menva/chrome";
 import { Cheffy, Pill, ScanFrame, SectionLabel } from "@/components/menva/brand";
+import { TableQR } from "@/components/menva/qr-code";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -195,7 +196,7 @@ function Onboarding() {
               <div className="w-full max-w-[220px] justify-self-center">
                 <ScanFrame>
                   <div className="flex aspect-square w-full items-center justify-center rounded-lg bg-card">
-                    <QrCode className="h-24 w-24 text-charcoal-700" />
+                    <TableQR table={tables || "12"} size={160} />
                   </div>
                 </ScanFrame>
               </div>
