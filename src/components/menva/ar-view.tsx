@@ -43,7 +43,7 @@ export default function ARView({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.7);
   const [rotation, setRotation] = useState(0);
   const [native, setNative] = useState<string | null>(null);
   const drag = useRef<{ x: number; rot: number } | null>(null);
@@ -93,7 +93,7 @@ export default function ARView({
           drag.current = null;
         }}
       >
-        <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1.4, 3.4], fov: 45 }} gl={{ alpha: true }}>
+        <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1.6, 4.8], fov: 48 }} gl={{ alpha: true }}>
           <ambientLight intensity={0.7} />
           <directionalLight position={[3, 6, 3]} intensity={1.8} castShadow />
           <Suspense fallback={<Loading />}>
