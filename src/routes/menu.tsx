@@ -1,12 +1,13 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { createFileRoute, ClientOnly, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Minus, Plus, X, ScanLine } from "lucide-react";
+import { Minus, Plus, X, ScanLine, Camera } from "lucide-react";
 import { Logo } from "@/components/menva/brand";
 import { Reveal } from "@/components/menva/motion";
 import { CATEGORIES, DISHES, RESTAURANT, whatsappLink, type Dish } from "@/lib/menva-data";
 
 const Dish3D = lazy(() => import("@/components/menva/dish-3d"));
+const ARView = lazy(() => import("@/components/menva/ar-view"));
 
 export const Route = createFileRoute("/menu")({
   validateSearch: (search: Record<string, unknown>): { table?: string } =>
@@ -38,6 +39,7 @@ function MenuPage() {
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [open, setOpen] = useState<Dish | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [ar, setAr] = useState<Dish | null>(null);
 
   const dishes = useMemo(
     () => (cat === "All" ? DISHES : DISHES.filter((d) => d.category === cat)),
@@ -125,9 +127,9 @@ function MenuPage() {
                     <h2 className="dish-name text-[26px] leading-tight sm:text-[30px]">{d.name}</h2>
                     <p className="price-num shrink-0 text-base text-charcoal-700">${d.price}</p>
                   </div>
-                  {(d.special || d.fresh) && (
+                  {(d.signature || d.special || d.fresh) && (
                     <p className="label-xs mt-2 text-saffron-700">
-                      {d.special ? "Chef's special" : "Fresh today"}
+                      {d.signature ? "Signature dish" : d.special ? "Chef's special" : "Fresh today"}
                     </p>
                   )}
                   <p className="mt-3 max-w-lg text-[15px] leading-[1.75] text-charcoal-700/75">
@@ -137,7 +139,7 @@ function MenuPage() {
                     {d.allergens.join(" · ")} — {d.kcal} kcal · {d.minutes} min
                   </p>
                   <span className="label-xs mt-4 inline-block text-charcoal-700 transition-colors group-hover:text-saffron-700">
-                    See it in 3D →
+                    {d.model ? "See it in 3D · place it on your table →" : "See it in 3D →"}
                   </span>
                 </div>
               </motion.article>
@@ -197,10 +199,19 @@ function MenuPage() {
                       />
                     }
                   >
-                    <Dish3D image={open.image} alt={open.name} />
+                    <Dish3D image={open.image} alt={open.name} {...(open.model ? { model: open.model } : {})} />
                   </Suspense>
                 </ClientOnly>
               </div>
+
+              {open.model && (
+                <button
+                  onClick={() => setAr(open)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-charcoal-900 px-6 py-3.5 text-sm font-semibold text-cream-50 transition-transform active:scale-[0.97]"
+                >
+                  <Camera className="h-4 w-4" /> Display on your table
+                </button>
+              )}
 
               <p className="mt-6 text-[15px] leading-[1.75] text-charcoal-700/80">{open.blurb}</p>
 
@@ -263,6 +274,19 @@ function MenuPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {ar?.model && (
+        <ClientOnly fallback={null}>
+          <Suspense fallback={null}>
+            <ARView
+              name={ar.name}
+              model={ar.model}
+              {...(ar.usdz ? { usdz: ar.usdz } : {})}
+              onClose={() => setAr(null)}
+            />
+          </Suspense>
+        </ClientOnly>
+      )}
 
       {/* Order bar */}
       <AnimatePresence>
