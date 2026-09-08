@@ -2,6 +2,9 @@ import pasta from "@/assets/dish-pasta.jpg";
 import salad from "@/assets/dish-salad.jpg";
 import scallops from "@/assets/dish-scallops.jpg";
 import tart from "@/assets/dish-tart.jpg";
+import burger from "@/assets/dish-burger.jpg";
+import burgerGlb from "@/assets/burger.glb.asset.json";
+import burgerUsdz from "@/assets/burger.usdz.asset.json";
 
 export type Dish = {
   id: string;
@@ -17,6 +20,9 @@ export type Dish = {
   image: string;
   fresh?: boolean;
   special?: boolean;
+  signature?: boolean;
+  model?: string;
+  usdz?: string;
   views: number;
   orders: number;
 };
@@ -29,6 +35,27 @@ export const RESTAURANT = {
 };
 
 export const DISHES: Dish[] = [
+  {
+    id: "royale",
+    name: "La Fiamma Royale",
+    category: "Secondi",
+    price: 28,
+    blurb:
+      "Dry-aged wagyu over oak embers, aged cheddar melted to a slow gold, burnt-honey onions, brioche brushed with beef fat.",
+    chefStory:
+      "Our signature. One patty, one fire, one minute of patience — the flame does the seasoning and we simply stay out of its way.",
+    ingredients: ["Dry-aged wagyu", "24-month cheddar", "Burnt-honey onion", "Brioche", "Smoked aioli"],
+    allergens: ["Gluten", "Milk", "Egg", "Mustard"],
+    kcal: 890,
+    minutes: 16,
+    image: burger,
+    model: burgerGlb.url,
+    usdz: burgerUsdz.url,
+    signature: true,
+    special: true,
+    views: 5210,
+    orders: 1880,
+  },
   {
     id: "burrata",
     name: "Heirloom & Burrata",
