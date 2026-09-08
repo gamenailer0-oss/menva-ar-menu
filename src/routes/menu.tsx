@@ -9,9 +9,9 @@ import { CATEGORIES, DISHES, RESTAURANT, whatsappLink, type Dish } from "@/lib/m
 const Dish3D = lazy(() => import("@/components/menva/dish-3d"));
 
 export const Route = createFileRoute("/menu")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    table: typeof search['table'] === "string" ? (search['table'] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { table?: string } =>
+    typeof search['table'] === "string" ? { table: search['table'] as string } : {},
+
   head: () => ({
     meta: [
       { title: "Osteria Lume — the living table menu on MENVA" },
