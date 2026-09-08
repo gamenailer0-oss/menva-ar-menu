@@ -1,4 +1,4 @@
-import { Suspense, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import {
   ContactShadows,
@@ -7,6 +7,7 @@ import {
   OrbitControls,
   useProgress,
   Html,
+  useGLTF,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -44,6 +45,43 @@ function Plate({ image }: { image: string }) {
   );
 }
 
+export function GLBModel({ url, spin = true }: { url: string; spin?: boolean }) {
+  const { scene } = useGLTF(url);
+  const group = useRef<THREE.Group>(null);
+
+  const model = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const scale = 2 / Math.max(size.x, size.y, size.z || 1);
+    clone.position.set(-center.x, -box.min.y, -center.z);
+    clone.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+      }
+    });
+    const wrap = new THREE.Group();
+    wrap.add(clone);
+    wrap.scale.setScalar(scale);
+    return wrap;
+  }, [scene]);
+
+  useFrame((_, delta) => {
+    if (spin && group.current) group.current.rotation.y += delta * 0.35;
+  });
+
+  return (
+    <group ref={group} position={[0, -0.9, 0]}>
+      <primitive object={model} />
+    </group>
+  );
+}
+
 function Loader() {
   const { progress } = useProgress();
   return (
@@ -53,7 +91,15 @@ function Loader() {
   );
 }
 
-export default function Dish3D({ image, alt }: { image: string; alt: string }) {
+export default function Dish3D({
+  image,
+  alt,
+  model,
+}: {
+  image: string;
+  alt: string;
+  model?: string;
+}) {
   return (
     <div
       className="h-[320px] w-full cursor-grab overflow-hidden rounded-xl active:cursor-grabbing"
@@ -71,7 +117,7 @@ export default function Dish3D({ image, alt }: { image: string; alt: string }) {
           shadow-mapSize-height={1024}
         />
         <Suspense fallback={<Loader />}>
-          <Plate image={image} />
+          {model ? <GLBModel url={model} /> : <Plate image={image} />}
           <Environment>
             <Lightformer intensity={2} position={[0, 5, 2]} scale={[8, 8, 1]} />
             <Lightformer
