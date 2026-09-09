@@ -81,20 +81,24 @@ function Reticle({
 
   useXRHitTest(
     (results, getWorldMatrix) => {
-      if (results.length === 0 || results[0] == null) {
+      const hit = results[0];
+      if (hit == null) {
         if (found.current) {
           found.current = false;
           onHit(null);
         }
         return;
       }
-      const hit = results[0];
       if (getWorldMatrix(matrixHelper, hit) && ref.current) {
         ref.current.visible = visible;
         matrixHelper.decompose(ref.current.position, ref.current.quaternion, new THREE.Vector3());
       }
-      if (!found.current) found.current = true;
-      onHit(hit);
+      if (!found.current) {
+        found.current = true;
+        onHit(hit);
+      } else {
+        onHit(hit);
+      }
     },
     "viewer",
     ["plane", "mesh"],
@@ -119,47 +123,43 @@ function Reticle({
 }
 
 function Scene({
+  name,
   model,
   placed,
   setPlaced,
-  hitRef,
   scale,
+  setScale,
   rotation,
-  requestPlace,
+  setRotation,
 }: {
+  name: string;
   model: string;
   placed: boolean;
   setPlaced: (v: boolean) => void;
-  hitRef: React.MutableRefObject<XRHitTestResult | null>;
   scale: number;
+  setScale: (v: number) => void;
   rotation: number;
-  requestPlace: React.MutableRefObject<(() => void) | null>;
+  setRotation: (v: number) => void;
 }) {
   const [anchor, createAnchor] = useXRAnchor();
   const [fallback, setFallback] = useState<THREE.Matrix4 | null>(null);
   const [surface, setSurface] = useState(false);
   const session = useXR((s) => s.session);
+  const hitRef = useRef<XRHitTestResult | null>(null);
+  const placedRef = useRef(placed);
+  placedRef.current = placed;
 
   const place = useRef(() => {});
   place.current = () => {
     const hit = hitRef.current;
-    if (!hit) return;
-    createAnchor({ relativeTo: "hit-test-result", hitTestResult: hit })
-      .then((a) => {
-        if (!a) setFallback(new THREE.Matrix4().copy(matrixHelper));
-      })
-      .catch(() => setFallback(new THREE.Matrix4().copy(matrixHelper)));
+    if (!hit || placedRef.current) return;
+    const snapshot = new THREE.Matrix4().copy(matrixHelper);
+    setFallback(snapshot);
+    createAnchor({ relativeTo: "hit-test-result", hitTestResult: hit }).catch(() => undefined);
     setPlaced(true);
   };
 
-  useEffect(() => {
-    requestPlace.current = () => place.current();
-    return () => {
-      requestPlace.current = null;
-    };
-  }, [requestPlace]);
-
-  // Tapping the screen inside the session also places / moves the plate.
+  // A tap anywhere in the session (a WebXR "select") sets the plate down.
   useEffect(() => {
     if (!session) return;
     const onSelect = () => place.current();
@@ -198,23 +198,126 @@ function Scene({
         </group>
       )}
       <XRDomOverlay>
-        <ArOverlay placed={placed} surface={surface} />
+        <ArOverlay
+          name={name}
+          placed={placed}
+          surface={surface}
+          scale={scale}
+          setScale={setScale}
+          rotation={rotation}
+          setRotation={setRotation}
+          onPlace={() => place.current()}
+          onReset={() => {
+            setPlaced(false);
+            setRotation(0);
+            setScale(1);
+          }}
+          onExit={() => session?.end()}
+        />
       </XRDomOverlay>
     </>
   );
 }
 
-/** Hint text drawn over the live AR session. */
-function ArOverlay({ placed, surface }: { placed: boolean; surface: boolean }) {
+/** Controls and guidance drawn over the live AR session. */
+function ArOverlay({
+  name,
+  placed,
+  surface,
+  scale,
+  setScale,
+  rotation,
+  setRotation,
+  onPlace,
+  onReset,
+  onExit,
+}: {
+  name: string;
+  placed: boolean;
+  surface: boolean;
+  scale: number;
+  setScale: (v: number) => void;
+  rotation: number;
+  setRotation: (v: number) => void;
+  onPlace: () => void;
+  onReset: () => void;
+  onExit: () => void;
+}) {
+  const drag = useRef<{ x: number; rot: number } | null>(null);
+  const pinch = useRef<{ dist: number; scale: number } | null>(null);
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 p-6 pb-10 text-center">
-      <p className="label-xs mx-auto max-w-xs rounded-full bg-charcoal-900/65 px-4 py-2 text-cream-50 backdrop-blur-sm">
-        {placed
-          ? "Walk around it · drag to spin · pinch to resize"
-          : surface
-            ? "Tap the ring to set it down on the table"
-            : "Move your phone slowly to find the table"}
-      </p>
+    <div className="fixed inset-0 select-none text-cream-50">
+      {/* gesture layer over the placed plate */}
+      <div
+        className="absolute inset-0 touch-none"
+        onTouchStart={(e) => {
+          if (!placed) return;
+          if (e.touches.length === 2) {
+            const [a, b] = [e.touches[0]!, e.touches[1]!];
+            pinch.current = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), scale };
+          } else if (e.touches[0]) {
+            drag.current = { x: e.touches[0].clientX, rot: rotation };
+          }
+        }}
+        onTouchMove={(e) => {
+          if (!placed) return;
+          if (e.touches.length === 2 && pinch.current) {
+            const [a, b] = [e.touches[0]!, e.touches[1]!];
+            const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+            setScale(Math.min(2.5, Math.max(0.4, (pinch.current.scale * d) / pinch.current.dist)));
+          } else if (drag.current && e.touches[0]) {
+            setRotation(drag.current.rot + (e.touches[0].clientX - drag.current.x) * 0.012);
+          }
+        }}
+        onTouchEnd={() => {
+          drag.current = null;
+          pinch.current = null;
+        }}
+      />
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-5">
+        <div className="rounded-2xl bg-charcoal-900/55 px-4 py-3 backdrop-blur-sm">
+          <p className="label-xs text-saffron-300">On your table</p>
+          <p className="mt-1 font-display text-xl italic">{name}</p>
+        </div>
+        <div className="pointer-events-auto flex gap-2">
+          {placed && (
+            <button
+              onClick={onReset}
+              aria-label="Place it somewhere else"
+              className="rounded-full bg-charcoal-900/60 p-3 backdrop-blur-sm active:scale-[0.94]"
+            >
+              <RotateCcw className="h-5 w-5" />
+            </button>
+          )}
+          <button
+            onClick={onExit}
+            aria-label="Leave AR"
+            className="rounded-full bg-charcoal-900/60 p-3 backdrop-blur-sm active:scale-[0.94]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 space-y-4 p-6 pb-10 text-center">
+        <p className="label-xs mx-auto inline-block rounded-full bg-charcoal-900/65 px-4 py-2 backdrop-blur-sm">
+          {placed
+            ? "Walk around it · drag to spin · pinch to resize"
+            : surface
+              ? "Tap to set it down on the table"
+              : "Move your phone slowly to find the table"}
+        </p>
+        {!placed && surface && (
+          <button
+            onClick={onPlace}
+            className="mx-auto block w-full max-w-sm rounded-full bg-saffron-500 px-6 py-3.5 text-sm font-semibold text-primary-foreground active:scale-[0.97]"
+          >
+            Put it on the table
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -238,9 +341,6 @@ export default function ARView({
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [qr, setQr] = useState<string | null>(null);
-  const hitRef = useRef<XRHitTestResult | null>(null);
-  const requestPlace = useRef<(() => void) | null>(null);
-  const gesture = useRef<{ x: number; rot: number; dist: number; scale: number } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -292,44 +392,29 @@ export default function ARView({
 
   return (
     <div className="fixed inset-0 z-[60] bg-charcoal-900 text-cream-50">
-      {/* Live AR canvas — transparent, the real room shows through */}
       {support === "xr" && (
-        <div
-          className="absolute inset-0 touch-none"
-          onPointerDown={(e) => {
-            gesture.current = { x: e.clientX, rot: rotation, dist: 0, scale };
-          }}
-          onPointerMove={(e) => {
-            if (gesture.current && placed)
-              setRotation(gesture.current.rot + (e.clientX - gesture.current.x) * 0.012);
-          }}
-          onPointerUp={() => {
-            gesture.current = null;
-          }}
+        <Canvas
+          shadows
+          dpr={[1, 2]}
+          camera={{ position: [0, 1.4, 1.6], fov: 50 }}
+          gl={{ alpha: true }}
+          style={{ background: "transparent" }}
         >
-          <Canvas
-            shadows
-            dpr={[1, 2]}
-            camera={{ position: [0, 1.4, 1.6], fov: 50 }}
-            gl={{ alpha: true }}
-            style={{ background: "transparent" }}
-          >
-            <XR store={store}>
-              <Scene
-                model={model}
-                placed={placed}
-                setPlaced={setPlaced}
-                hitRef={hitRef}
-                scale={scale}
-                rotation={rotation}
-                requestPlace={requestPlace}
-              />
-            </XR>
-          </Canvas>
-        </div>
+          <XR store={store}>
+            <Scene
+              name={name}
+              model={model}
+              placed={placed}
+              setPlaced={setPlaced}
+              scale={scale}
+              setScale={setScale}
+              rotation={rotation}
+              setRotation={setRotation}
+            />
+          </XR>
+        </Canvas>
       )}
 
-      {/* Pre-session / unsupported panel */}
       {!active && (
         <div className="absolute inset-0 flex flex-col justify-between bg-charcoal-900 p-7">
           <div className="flex items-start justify-between gap-4">
@@ -356,9 +441,9 @@ export default function ARView({
             {support === "xr" && (
               <>
                 <p className="text-[15px] leading-[1.75] text-cream-50/75">
-                  Point your phone at the table. When the ring appears, tap it and the burger will
-                  sit there at <em className="font-display italic">real size</em> — walk around it
-                  and it stays put.
+                  Point your phone at the table. When the ring appears, tap it and the burger sits
+                  there at <em className="font-display italic">real size</em> — walk around it and
+                  it stays put.
                 </p>
                 {error && <p className="label-xs text-saffron-300">{error}</p>}
                 <button
@@ -373,7 +458,7 @@ export default function ARView({
             {support === "ios" && usdz && (
               <>
                 <p className="text-[15px] leading-[1.75] text-cream-50/75">
-                  Your iPhone places the plate with Apple's own AR viewer. It finds the table,
+                  Your iPhone places the plate with Apple's own AR viewer: it finds the table,
                   anchors the burger at real size and lets you walk around it.
                 </p>
                 <a
@@ -382,8 +467,6 @@ export default function ARView({
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-saffron-500 px-6 py-4 text-sm font-semibold text-primary-foreground"
                 >
                   <Smartphone className="h-4 w-4" /> Place it on your table
-                  {/* Quick Look requires an image child */}
-                  <img src="" alt="" className="hidden" />
                 </a>
               </>
             )}
@@ -411,53 +494,6 @@ export default function ARView({
             )}
           </div>
           <div />
-        </div>
-      )}
-
-      {/* In-session controls */}
-      {active && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-5">
-          <div className="pointer-events-auto max-w-[60%] rounded-2xl bg-charcoal-900/55 px-4 py-3 backdrop-blur-sm">
-            <p className="label-xs text-saffron-300">On your table</p>
-            <p className="mt-1 font-display text-xl italic">{name}</p>
-          </div>
-          <div className="pointer-events-auto flex gap-2">
-            {placed && (
-              <button
-                onClick={() => {
-                  setPlaced(false);
-                  setRotation(0);
-                  setScale(1);
-                }}
-                aria-label="Place it somewhere else"
-                className="rounded-full bg-charcoal-900/60 p-3 backdrop-blur-sm active:scale-[0.94]"
-              >
-                <RotateCcw className="h-5 w-5" />
-              </button>
-            )}
-            <button
-              onClick={() => store.getState().session?.end()}
-              aria-label="Leave AR"
-              className="rounded-full bg-charcoal-900/60 p-3 backdrop-blur-sm active:scale-[0.94]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {active && placed && (
-        <div className="pointer-events-auto absolute inset-x-0 bottom-24 mx-auto flex w-full max-w-sm items-center gap-4 px-6">
-          <input
-            type="range"
-            min={0.5}
-            max={2}
-            step={0.01}
-            value={scale}
-            aria-label="Plate size"
-            onChange={(e) => setScale(Number(e.target.value))}
-            className="h-1 w-full accent-saffron-500"
-          />
         </div>
       )}
     </div>
