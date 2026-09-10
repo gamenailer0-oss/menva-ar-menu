@@ -188,7 +188,7 @@ function Scene({
           setSurface(r != null);
         }}
       />
-      {placed && anchor && <XRSpace space={anchor}>{content}</XRSpace>}
+      {placed && anchor && <XRSpace space={anchor.anchorSpace}>{content}</XRSpace>}
       {placed && !anchor && fallback && (
         <group
           position={new THREE.Vector3().setFromMatrixPosition(fallback)}
