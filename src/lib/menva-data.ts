@@ -9,7 +9,7 @@ import burgerUsdz from "@/assets/burger.usdz.asset.json";
 export type Dish = {
   id: string;
   name: string;
-  category: "Antipasti" | "Primi" | "Secondi" | "Dolci";
+  category: string;
   price: number;
   blurb: string;
   chefStory: string;
